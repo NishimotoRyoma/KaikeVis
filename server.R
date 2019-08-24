@@ -108,8 +108,34 @@ shinyServer(function(input,output){
 
   
   #プロットの生成
-  #固定ノードの生成
+  
+  #最も利用されるノードを求めて、一番前に置く(中心点になる)
   NodeLabels=unique(c(levels(Data$nodeS),levels(Data$nodeF)))
+  tempMat=table(Data[c("nodeS","nodeF")])
+  NodeNum=c()
+  for(i in NodeLabels){
+    temp1=c()
+    temp2=c()
+    if(sum(rownames(tempMat)==i)>0){
+      temp1 <- sum(tempMat[i,])
+      temp1[is.na(temp1)] <- 0
+    }
+    if(sum(colnames(tempMat)==i)>0){    
+      temp2 <- sum(tempMat[,i])
+      temp2[is.na(temp2)] <- 0
+    }
+    if(is.null(temp1)) temp1=0
+    if(is.null(temp2)) temp2=0
+    
+    NodeNum[which(NodeLabels==i)] = sum(c(temp1,temp2))
+  }
+  
+  tempLabels=c()
+  tempLabels[1]=NodeLabels[which.max(NodeNum)]
+  tempLabels[2:length(NodeLabels)]=NodeLabels[-which.max(NodeNum)]
+  NodeLabels=tempLabels
+  
+  #固定ノードの生成
   nL=c()
   for(i in NodeLabels){
     nL[which(NodeLabels==i)]=i;
