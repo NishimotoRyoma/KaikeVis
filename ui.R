@@ -5,6 +5,8 @@
 library(shiny)
 library(igraph)
 library(DT)
+library(shinyjs)
+library(colourpicker)
 
 #---------------#
 # userInterface #
@@ -20,14 +22,14 @@ shinyUI(navbarPage(
       tags$script(src = "drag.js")
     ),
     sidebarLayout(sidebarPanel(
-      h3("赤線にデータをドロップ"),
+      h4("赤線にデータをドロップ"),
       div(
         id = "drop-area",
         ondragover = "f1(event)",
         ondrop = "f2(event)"
       )
     ),
-    mainPanel(DT::dataTableOutput("table")))
+    mainPanel(h4(textOutput("tableText")),DT::dataTableOutput("table")))
     
   ),
   
@@ -36,11 +38,12 @@ shinyUI(navbarPage(
     
     
     titlePanel("会計可視化"),
-    fluidRow(column(4,
+    fluidRow(column(3,
                     
                     
                     
                     dataTableOutput("smallTable")),
+             column(1),
              column(8,
                     
                     #グラフの表示部分
@@ -50,7 +53,22 @@ shinyUI(navbarPage(
                       
                     ))),
     
-    fluidRow(column(4,
+    fluidRow(column(3,
+                    
+                    numericInput(
+                      "eCurve",
+                      "矢印の曲率(0以上)",
+                      value=0.1,
+                      min=0,
+                      step=0.1
+                      
+                      
+                      
+                    )
+                   ),
+             column(2),
+             
+             column(7,
                     
                     sliderInput(
                       "bins",
@@ -58,9 +76,40 @@ shinyUI(navbarPage(
                       min = 0,
                       max = 20,
                       value = 0
+                    ),
+                    actionButton("do1","残高表示/非表示")
                     )
-    )
+             
+             
+             
              )
+  ),
+  
+  tabPanel(
+    "詳細設定",
+    
+    titlePanel("詳細設定"),
+    
+    fluidRow(column(4,
+                    colourInput(
+                      "vColor",
+                      "ノードの色",
+                      value="gold",
+                      palette="square",
+                      allowTransparent=TRUE
+                      )
+                    ),
+             column(4,
+                    colourInput(
+                      "eColor",
+                      "エッジの色",
+                      value="black",
+                      palette="square",
+                      allowTransparent=TRUE
+                    )
+             )
+      
+    )
   )
   
 ))
