@@ -118,6 +118,7 @@ shinyServer(function(input,output){
         input$vSize
         input$upper
         input$lower
+        input$layoutIndex
     
         #-------------#
         # outputTable #
@@ -182,16 +183,25 @@ shinyServer(function(input,output){
         g=graph(c("None","None"),isolates=nL);
         g=delete_edges(g,E(g)[1]);
         g=delete_vertices(g,"None");
-        l=layout_as_star(g);
+        
+        #layoutListの生成
+        layoutList=list();
+        layoutList[[1]]=layout_as_star(g);
+        layoutList[[2]]=layout_in_circle(g);
+        layoutList[[3]]=layout_nicely(g);
+        layoutList[[4]]=layout_randomly(g);
+        layoutList[[5]]=layout_as_tree(g);
+        layoutList[[6]]=layout_on_sphere(g);
+        l=layoutList[[as.numeric(input$layoutIndex)]];
   
   
   
   
         #ノードのラベルの決定
         nodeList=rep(0,length(nL));
-        labelName=paste(V(g)$name,"\n(",sep="");
+        labelName=paste(V(g)$name,"\n",sep="");
         labelName=paste(labelName,nodeList,sep="");
-        labelName=paste(labelName,"yen)",sep="");
+        #labelName=paste(labelName,"yen",sep="");
         V(g)$label=labelName;
   
   
@@ -241,9 +251,9 @@ shinyServer(function(input,output){
           
             if(input$do1%%2==0)
             {
-              labelName <- paste(V(g)$name,"\n(",sep="");
+              labelName <- paste(V(g)$name,"\n",sep="");
               labelName <- paste(labelName,nodeList,sep="");
-              labelName <- paste(labelName,"yen)",sep="");
+              #labelName <- paste(labelName,"yen",sep="");
               V(g)$label <- labelName;
             }
             else
