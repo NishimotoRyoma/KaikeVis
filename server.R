@@ -116,6 +116,8 @@ shinyServer(function(input,output){
         input$vfColor
         input$do1
         input$vSize
+        input$upper
+        input$lower
     
         #-------------#
         # outputTable #
@@ -198,39 +200,57 @@ shinyServer(function(input,output){
         name_=c(" ",as.character(as.Date(time_,origin="1970-01-01")));
         Data_=list();
         Data_[[1]] <- data.frame(nodeS=c(),nodeF=c(),edgeLabel=c());
-  
+        
+        #upper以上の額のエッジは出力しない
+        upper=input$upper
+        if(is.null(upper)==FALSE)
+        {
+          if(is.na(upper)==FALSE)
+          {
+            Data=Data[Data$edgeLabel<upper,]
+          }
+        }
+        #lower以下の額のエッジは出力しない
+        lower=input$lower
+        if(is.null(lower)==FALSE){
+          if(is.na(lower)==FALSE){
+            Data=Data[Data$edgeLabel>lower,]
+          }
+        }
         #グラフの生成
         i = 1;
         for(t in time_)
         {
           Data_[[which(time_==t)+1]] <- Data[Data$Date==t,1:3];
-          num = 0;
-          for(i in 1:dim(Data)[1])
+          if(sum(Data$Date==t)>0)
           {
-            if(Data$Date[i]==t)
+            num = 0;
+            for(i in 1:dim(Data)[1])
             {
-              num = num+1;
+              if(Data$Date[i]==t)
+              {
+                num = num+1;
+                #factorの水準値が出てくるのでcharに変換
+                g = add_edges(g,c(as.character(Data$nodeS[i]),as.character(Data$nodeF[i])));
+                E(g)$label[num] = Data$edgeLabel[i];
         
-              #factorの水準値が出てくるのでcharに変換
-              g = add_edges(g,c(as.character(Data$nodeS[i]),as.character(Data$nodeF[i])));
-              E(g)$label[num] = Data$edgeLabel[i];
-      
-              nodeList[which(V(g)$name==as.character(Data$nodeS[i]))] = nodeList[which(V(g)$name==as.character(Data$nodeS[i]))] - Data$edgeLabel[i];
-              nodeList[which(V(g)$name==as.character(Data$nodeF[i]))] = nodeList[which(V(g)$name==as.character(Data$nodeF[i]))] + Data$edgeLabel[i];
+                nodeList[which(V(g)$name==as.character(Data$nodeS[i]))] = nodeList[which(V(g)$name==as.character(Data$nodeS[i]))] - Data$edgeLabel[i];
+                nodeList[which(V(g)$name==as.character(Data$nodeF[i]))] = nodeList[which(V(g)$name==as.character(Data$nodeF[i]))] + Data$edgeLabel[i];
+              }
+            }
+          
+            if(input$do1%%2==0)
+            {
+              labelName <- paste(V(g)$name,"\n(",sep="");
+              labelName <- paste(labelName,nodeList,sep="");
+              labelName <- paste(labelName,"yen)",sep="");
+              V(g)$label <- labelName;
+            }
+            else
+            {
+              V(g)$label <- V(g)$name;
             }
           }
-          if(input$do1%%2==0)
-          {
-            labelName <- paste(V(g)$name,"\n(",sep="");
-            labelName <- paste(labelName,nodeList,sep="");
-            labelName <- paste(labelName,"yen)",sep="");
-            V(g)$label <- labelName;
-          }
-          else
-          {
-            V(g)$label <- V(g)$name;
-          }
-          
           graph_[[which(time_==t)+1]] <- g;
           g <- delete_edges(g,E(g));
         }

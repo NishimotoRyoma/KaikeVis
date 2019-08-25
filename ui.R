@@ -152,6 +152,26 @@ shinyUI(
             min=0,
             step=1
           )
+        ),
+        
+        column(4,
+               numericInput(
+                 "upper",
+                 "金額の上限(入力値以上のエッジを省略)",
+                 value=9999999999,
+                 min=0,
+                 step=1
+               )
+        ),
+        
+        column(4,
+               numericInput(
+                 "lower",
+                 "金額の下限(入力値以下のエッジを省略)",
+                 value=-0.00000001,
+                 min=0,
+                 step=1
+               )
         )
       )
     )
