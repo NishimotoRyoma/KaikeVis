@@ -5,6 +5,8 @@
 library(shiny)
 library(igraph)
 library(DT)
+library(shinyjs)
+library(colourpicker)
 
 
 #-----------#
@@ -74,6 +76,9 @@ shinyServer(function(input,output){
   #uiへ渡すためにrenderDataTableを通して変数tableへ格納
   output$table <- renderDataTable(testData)
   
+  #uiのタイトル
+  output$tableText=renderText({"以下のような形式のデータセットを用いる"})
+  
   ###########見本データの作成終わり############
   
   ###########アップロード後の振る舞い############
@@ -85,6 +90,18 @@ shinyServer(function(input,output){
   #アップロードしたファイルはUIのmydataに保存される。
   #observeEvent(input$mydata,{...})内の処理はmydataにデータが入って初めて実行される
   observeEvent(input$mydata,{
+    output$tableText=renderText({"アップロード済みデータ"})
+  
+  #observe({...})内の処理は中のinputが変更されるたびに再実行される
+  observe({
+    
+    #-----------#
+    # inputList #
+    #-----------#
+    input$eCurve
+    input$eColor
+    input$vColor
+    input$do1
     
     #-------------#
     # outputTable #
@@ -104,7 +121,7 @@ shinyServer(function(input,output){
   
   #uiから受け取ったbins情報をもとに階級幅の生成
   time_ <- unique(Data$Date)
-  #output$lt <- length(time_)
+
 
   
   #プロットの生成
@@ -180,19 +197,29 @@ shinyServer(function(input,output){
         nodeList[which(V(g)$name==as.character(Data$nodeF[i]))]=nodeList[which(V(g)$name==as.character(Data$nodeF[i]))]+Data$edgeLabel[i]
       }
     }
-    labelName=paste(V(g)$name,"\n(",sep="")
-    labelName=paste(labelName,nodeList,sep="")
-    labelName=paste(labelName,"yen)",sep="")
-    V(g)$label=labelName
-    graph_[[which(time_==t)+1]] <- g
+    if(input$do1%%2==0){
+      labelName=paste(V(g)$name,"\n(",sep="")
+      labelName=paste(labelName,nodeList,sep="")
+      labelName=paste(labelName,"yen)",sep="")
+      V(g)$label=labelName
+    }
+    else{
+      V(g)$label=V(g)$name
+    }
+
+          graph_[[which(time_==t)+1]] <- g
     g=delete_edges(g,E(g))
   }
 
   
+  #uiでinputしたeCurve,colorを反映させる
+  eCurve=input$eCurve
+  vColor=input$vColor
+  eColor=input$eColor
   
   output$distPlot <- renderPlot({
-    par(family="HiraKakuProN-W3")
-    plot(graph_[[input$bins+1]],layout=l,edge.arrow.size=0.5, vertex.color=adjustcolor(c("gold"),alpha=0.8), vertex.size=20, vertex.frame.color="grey", vertex.label.color="black", vertex.label.cex=1.0, vertex.label.dist=0,main=name_[input$bins+1])
+    par(family="HiraKakuProN-W3",ps=10)
+    plot(graph_[[input$bins+1]],layout=l,edge.arrow.size=0.5,edge.curved=eCurve,edge.color=eColor, vertex.color=adjustcolor(c(vColor),alpha=0.8), vertex.size=20, vertex.frame.color="grey", vertex.label.color="black", vertex.label.cex=1.0, vertex.label.dist=0,main=name_[input$bins+1])
 
   })
   
@@ -202,5 +229,5 @@ shinyServer(function(input,output){
   
   }) 
 })
-
+})
 ###########アップロード後の振る舞い終わり############
