@@ -70,10 +70,8 @@ shinyUI(
             step=0.1
           )
         ),
-             
-        column(2),
-             
-        column(7,
+
+        column(6,
           sliderInput(
             "bins",
             "",
@@ -82,7 +80,11 @@ shinyUI(
             value = 0
           ),
           actionButton("do1","残高表示/非表示")
-        )
+
+        ),
+        
+        column(3)
+        
       )
     ),
   
@@ -171,6 +173,24 @@ shinyUI(
                  value=-0.00000001,
                  min=0,
                  step=1
+               )
+        )
+      ),
+      
+      fluidRow(
+        column(4,
+               selectInput(
+                 "layoutIndex",
+                 "ノードの配置",
+                 choices=list(
+                   "Star" = 1,
+                   "Circle" = 2,
+                   "Nicely" = 3,
+                   "Random" = 4,
+                   "Tree" = 5,
+                   "Sphere" = 6
+                 ),
+                 selected = 1
                )
         )
       )
