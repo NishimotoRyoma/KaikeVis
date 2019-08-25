@@ -45,43 +45,52 @@ shinyServer(function(input,output){
   #nodeLabel : a~oのアルファベット
   #           ノードの作成。今回はa~oと名前をつけておいた
   #nodeS,nodeF,edgeLabel,dateSeq : 先ほど説明したデータ
-  dataNum=20
-  nodeLabel=letters[1:15];
-  nodeS=c()
-  nodeF=c()
-  edgeLabel=c()
-  dateSeq=c()  
+  dataNum = 20;
+  nodeLabel = letters[1:15];
+  nodeS = c();
+  nodeF = c();
+  edgeLabel = c();
+  dateSeq = c();
   
   #---------#
   # process #
   #---------#
   #データの加工と作成
-  for(i in 1:dataNum){
-    temp=sample(nodeLabel,2);
-    nodeS[i]=temp[1];
-    nodeF[i]=temp[2];
-    edgeLabel[i]=sample(seq(100,900,100),1);
+  for(i in 1:dataNum)
+  {
+    #nodeS,nodeF,edgeLabelの作成
+    temp = sample(nodeLabel,2);
+    nodeS[i] <- temp[1];
+    nodeF[i] <- temp[2];
+    edgeLabel[i] <- sample(seq(100,900,100),1);
   }
   
-  initDate=as.Date("2019-01-01")
-  for(i in 1:(dataNum/5)){
-    initDate=initDate+1
-    dateSeq[((i-1)*5+1):((i)*5)]=rep(initDate,5)
+  initDate = as.Date("2019-01-01");
+  for(i in 1:(dataNum/5))
+  {
+    #Dateの作成
+    initDate = initDate+1;
+    dateSeq[((i-1)*5+1):((i)*5)] <- rep(initDate,5);
   }
-  dateSeq = as.character(as.Date(dateSeq,origin="1970-01-01"))
+  dateSeq = as.character(as.Date(dateSeq,origin="1970-01-01"));
   
-  #testData : dataframeとして保存
-  testData=data.frame(nodeS=nodeS,nodeF=nodeF,edgeLabel=edgeLabel,Date=dateSeq)
+  #サンプル用データ(testData) : dataframeとして保存
+  testData = data.frame(
+    nodeS=nodeS,
+    nodeF=nodeF,
+    edgeLabel=edgeLabel,
+    Date=dateSeq
+    );
   
-  #uiへ渡すためにrenderDataTableを通して変数tableへ格納
-  output$table <- renderDataTable(testData)
+  #作成した見本データをuiへ渡すためにrenderDataTableを通して変数tableへ格納
+  output$table <- renderDataTable(testData);
   
   #uiのタイトル
-  output$tableText=renderText({"以下のような形式のデータセットを用いる"})
+  output$tableText=renderText({"以下のような形式のデータセットを用いる"});
   
   ###########見本データの作成終わり############
   
-  ###########アップロード後の振る舞い############
+  ###########データアップロード後の振る舞い############
   
   #-----------#
   # csvUpload #
@@ -89,145 +98,181 @@ shinyServer(function(input,output){
   #CSVをアップロードしたあとに発生する処理を記述する。
   #アップロードしたファイルはUIのmydataに保存される。
   #observeEvent(input$mydata,{...})内の処理はmydataにデータが入って初めて実行される
-  observeEvent(input$mydata,{
-    output$tableText=renderText({"アップロード済みデータ"})
+  observeEvent(
+    input$mydata,{
+      output$tableText=renderText({"アップロード済みデータ"});
   
-  #observe({...})内の処理は中のinputが変更されるたびに再実行される
-  observe({
+      #observe({...})内の処理は中のinputが変更されるたびに再実行される
+      observe({
+        #-----------#
+        # inputList #
+        #-----------#
+        #以下のinput変数が変更された場合、再実行される
+        input$eCurve
+        input$eColor
+        input$elcolor
+        input$vColor
+        input$vlcolor
+        input$vfColor
+        input$do1
+        input$vSize
     
-    #-----------#
-    # inputList #
-    #-----------#
-    input$eCurve
-    input$eColor
-    input$vColor
-    input$do1
+        #-------------#
+        # outputTable #
+        #-------------#
+        #CSVをアップロードした場合に横にアップロードしたものを出力する
+        name <- names(input$mydata);
+        csv_file <- reactive(read.csv(text=input$mydata[[name]]));
+        output$table <- DT::renderDataTable(csv_file());
+
+        #--------------------#
+        # graphVisualization #
+        #--------------------#
+        #アップロードしたcsvファイルを次のタブで可視化する
+        #csvファイルをDataに入れる
+        Data <- csv_file();
+
+  
+        #uiから受け取ったbins情報をもとに階級幅の生成
+        time_ <- unique(Data$Date);
+
+
+        #####プロットの生成
+        #####まず最も利用されるノードを求めて、一番前に置く(中心点になる)
+        #NodeLabels : アップロードしたデータに利用されているノードのラベル
+        NodeLabels=unique(c(levels(Data$nodeS),levels(Data$nodeF)));
+        tempMat=table(Data[c("nodeS","nodeF")])
+        #NodeNum : それぞれのノードの出現回数
+        NodeNum=c();
+        for(i in NodeLabels)
+        {
+          temp1=c();
+          temp2=c();
+          if(sum(rownames(tempMat)==i)>0)
+          {
+            temp1 <- sum(tempMat[i,]);
+            temp1[is.na(temp1)] <- 0;
+          }
+          if(sum(colnames(tempMat)==i)>0)
+          {    
+            temp2 <- sum(tempMat[,i]);
+            temp2[is.na(temp2)] <- 0;
+          }
+          if(is.null(temp1)) temp1=0;
+          if(is.null(temp2)) temp2=0;
     
-    #-------------#
-    # outputTable #
-    #-------------#
-    #CSVをアップロードした場合に横にアップロードしたものを出力する
-    name <- names(input$mydata)
-    csv_file <- reactive(read.csv(text=input$mydata[[name]]))
-    output$table <- DT::renderDataTable(csv_file())
-
-    #--------------------#
-    # graphVisualization #
-    #--------------------#
-    #アップロードしたcsvファイルを次のタブで可視化する
-    
-    Data=csv_file()
-
+          NodeNum[which(NodeLabels==i)] = sum(c(temp1,temp2));
+        }
   
-  #uiから受け取ったbins情報をもとに階級幅の生成
-  time_ <- unique(Data$Date)
-
-
+        #NodeLabelsの順序変換
+        tempLabels=c();
+        tempLabels[1] <- NodeLabels[which.max(NodeNum)];
+        tempLabels[2:length(NodeLabels)] <- NodeLabels[-which.max(NodeNum)];
+        NodeLabels=tempLabels;
   
-  #プロットの生成
+        #固定ノードの生成
+        nL=c();
+        for(i in NodeLabels)
+        {
+          nL[which(NodeLabels==i)] <- i;
+        }
   
-  #最も利用されるノードを求めて、一番前に置く(中心点になる)
-  NodeLabels=unique(c(levels(Data$nodeS),levels(Data$nodeF)))
-  tempMat=table(Data[c("nodeS","nodeF")])
-  NodeNum=c()
-  for(i in NodeLabels){
-    temp1=c()
-    temp2=c()
-    if(sum(rownames(tempMat)==i)>0){
-      temp1 <- sum(tempMat[i,])
-      temp1[is.na(temp1)] <- 0
-    }
-    if(sum(colnames(tempMat)==i)>0){    
-      temp2 <- sum(tempMat[,i])
-      temp2[is.na(temp2)] <- 0
-    }
-    if(is.null(temp1)) temp1=0
-    if(is.null(temp2)) temp2=0
-    
-    NodeNum[which(NodeLabels==i)] = sum(c(temp1,temp2))
-  }
-  
-  tempLabels=c()
-  tempLabels[1]=NodeLabels[which.max(NodeNum)]
-  tempLabels[2:length(NodeLabels)]=NodeLabels[-which.max(NodeNum)]
-  NodeLabels=tempLabels
-  
-  #固定ノードの生成
-  nL=c()
-  for(i in NodeLabels){
-    nL[which(NodeLabels==i)]=i;
-  }
-  
-  g=graph(c("None","None"),isolates=nL)
-  g=delete_edges(g,E(g)[1])
-  g=delete_vertices(g,"None")
-  l=layout_as_star(g)
+        g=graph(c("None","None"),isolates=nL);
+        g=delete_edges(g,E(g)[1]);
+        g=delete_vertices(g,"None");
+        l=layout_as_star(g);
   
   
   
   
-  #ノードのラベルの決定
-  nodeList=rep(0,length(nL))
-  labelName=paste(V(g)$name,"\n(",sep="")
-  labelName=paste(labelName,nodeList,sep="")
-  labelName=paste(labelName,"yen)",sep="")
-  V(g)$label=labelName
+        #ノードのラベルの決定
+        nodeList=rep(0,length(nL));
+        labelName=paste(V(g)$name,"\n(",sep="");
+        labelName=paste(labelName,nodeList,sep="");
+        labelName=paste(labelName,"yen)",sep="");
+        V(g)$label=labelName;
   
   
-  graph_=list()
-  graph_[[1]]=g
-  name_=c(" ",as.character(as.Date(time_,origin="1970-01-01")))
-  Data_=list()
-  Data_[[1]]=data.frame(nodeS=c(),nodeF=c(),edgeLabel=c())
+        graph_=list();
+        graph_[[1]] <- g;
+        name_=c(" ",as.character(as.Date(time_,origin="1970-01-01")));
+        Data_=list();
+        Data_[[1]] <- data.frame(nodeS=c(),nodeF=c(),edgeLabel=c());
   
-  #グラフの生成
-  i=1
-  for(t in time_){
-    Data_[[which(time_==t)+1]]=Data[Data$Date==t,1:3]
-    num=0
-    for(i in 1:dim(Data)[1]){
-      if(Data$Date[i]==t){
-        num=num+1
+        #グラフの生成
+        i = 1;
+        for(t in time_)
+        {
+          Data_[[which(time_==t)+1]] <- Data[Data$Date==t,1:3];
+          num = 0;
+          for(i in 1:dim(Data)[1])
+          {
+            if(Data$Date[i]==t)
+            {
+              num = num+1;
         
-        ##factorの水準値が出てくるのでcharに変換
-        g=add_edges(g,c(as.character(Data$nodeS[i]),as.character(Data$nodeF[i])))
-        E(g)$label[num] = Data$edgeLabel[i]
+              #factorの水準値が出てくるのでcharに変換
+              g = add_edges(g,c(as.character(Data$nodeS[i]),as.character(Data$nodeF[i])));
+              E(g)$label[num] = Data$edgeLabel[i];
       
-        nodeList[which(V(g)$name==as.character(Data$nodeS[i]))]=nodeList[which(V(g)$name==as.character(Data$nodeS[i]))]-Data$edgeLabel[i]
-        nodeList[which(V(g)$name==as.character(Data$nodeF[i]))]=nodeList[which(V(g)$name==as.character(Data$nodeF[i]))]+Data$edgeLabel[i]
-      }
-    }
-    if(input$do1%%2==0){
-      labelName=paste(V(g)$name,"\n(",sep="")
-      labelName=paste(labelName,nodeList,sep="")
-      labelName=paste(labelName,"yen)",sep="")
-      V(g)$label=labelName
-    }
-    else{
-      V(g)$label=V(g)$name
-    }
-
-          graph_[[which(time_==t)+1]] <- g
-    g=delete_edges(g,E(g))
-  }
+              nodeList[which(V(g)$name==as.character(Data$nodeS[i]))] = nodeList[which(V(g)$name==as.character(Data$nodeS[i]))] - Data$edgeLabel[i];
+              nodeList[which(V(g)$name==as.character(Data$nodeF[i]))] = nodeList[which(V(g)$name==as.character(Data$nodeF[i]))] + Data$edgeLabel[i];
+            }
+          }
+          if(input$do1%%2==0)
+          {
+            labelName <- paste(V(g)$name,"\n(",sep="");
+            labelName <- paste(labelName,nodeList,sep="");
+            labelName <- paste(labelName,"yen)",sep="");
+            V(g)$label <- labelName;
+          }
+          else
+          {
+            V(g)$label <- V(g)$name;
+          }
+          
+          graph_[[which(time_==t)+1]] <- g;
+          g <- delete_edges(g,E(g));
+        }
 
   
-  #uiでinputしたeCurve,colorを反映させる
-  eCurve=input$eCurve
-  vColor=input$vColor
-  eColor=input$eColor
+        #uiでinputしたeCurve,color,sizeを反映させる
+        eCurve=input$eCurve
+        eColor=input$eColor
+        elColor=input$elColor
   
-  output$distPlot <- renderPlot({
-    par(family="HiraKakuProN-W3",ps=10)
-    plot(graph_[[input$bins+1]],layout=l,edge.arrow.size=0.5,edge.curved=eCurve,edge.color=eColor, vertex.color=adjustcolor(c(vColor),alpha=0.8), vertex.size=20, vertex.frame.color="grey", vertex.label.color="black", vertex.label.cex=1.0, vertex.label.dist=0,main=name_[input$bins+1])
+        vColor=input$vColor
+        vlColor=input$vlColor
+        vfColor=input$vfColor
+        vSize=input$vSize
+  
+        output$distPlot <- renderPlot({
+          par(family="HiraKakuProN-W3");
+          plot(
+            graph_[[input$bins+1]],
+            layout=l,
+            edge.arrow.size=0.5,
+            edge.curved=eCurve,
+            edge.color=eColor, 
+            edge.label.color=elColor, 
+            vertex.color=adjustcolor(c(vColor),alpha=0.8), 
+            vertex.size=vSize, 
+            vertex.frame.color=vfColor, 
+            vertex.label.color=vlColor, 
+            vertex.label.cex=1.0, 
+            vertex.label.dist=0,
+            main=name_[input$bins+1]
+          )
 
+
+        })
+  
+        output$smallTable <- DT::renderDataTable(
+          Data_[[input$bins+1]],
+          options=list(pageLength=5)
+        )
+  
+    }) 
   })
-  
-  output$smallTable <- DT::renderDataTable({
-    Data_[[input$bins+1]]
-  })
-  
-  }) 
-})
 })
 ###########アップロード後の振る舞い終わり############
