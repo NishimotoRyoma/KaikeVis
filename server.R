@@ -82,13 +82,12 @@ shinyServer(function(input,output){
     edgeLabel=edgeLabel,
     Date=dateSeq
     );
-    
     #作成した見本データをuiへ渡すためにrenderDataTableを通して変数tableへ格納
     output$table <- renderDataTable(testData);
     
     #uiのタイトル
     output$tableText=renderText({"以下のような形式のデータセットを用いる"});
-    output$dynamicText <- renderRHandsontable({rhandsontable(data.frame(node="",init=0))})
+    output$dynamicText <- renderRHandsontable({rhandsontable(data.frame(node="",init=0))});
     ###########見本データの作成終わり############
     
     ###########データアップロード後の振る舞い############
@@ -102,7 +101,6 @@ shinyServer(function(input,output){
     observeEvent(
     input$mydata,{
         output$tableText=renderText({"アップロード済みデータ"});
-        
         #-------------#
         # outputTable #
         #-------------#

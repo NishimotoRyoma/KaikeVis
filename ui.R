@@ -17,6 +17,18 @@ library(rhandsontable)
 shinyUI(
 navbarPage(
 "会計可視化",
+tabPanel("初期値の入力",
+         fluidRow(column(3),
+                  column(6,
+                         align="center",
+                         h4("ダブルクリックで金額の初期値(init)を変更できる")),
+                  column(3)
+         ),
+         column(4),
+         column(4,
+                rHandsontableOutput("dynamicText")),
+         column(4)
+),
 tabPanel(
 "データの入力",
 tags$head(
@@ -44,18 +56,7 @@ DT::dataTableOutput("table")
 )
 )
 ),
-tabPanel("初期値の入力",
-fluidRow(column(3),
-         column(6,
-                align="center",
-                h4("ダブルクリックで金額の初期値(init)を変更できる")),
-         column(3)
-         ),
-column(4),
-column(4,
-       rHandsontableOutput("dynamicText")),
-column(4)
-),
+
 tabPanel(
 "可視化",
 titlePanel("会計可視化"),
