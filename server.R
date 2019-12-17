@@ -403,9 +403,6 @@ shinyServer(function(input,output,session){
           print(which(V(g)$name=="現金"))
           
           gdis=distances(g,mode="out")["現金",]
-          print(gdis)
-          print(is(gdis))
-          print(which(gdis==1))
 
           cdisMax=max(gdis[gdis!=Inf])
           self_layout=matrix(0,length(V(g)$name),2)
@@ -426,14 +423,20 @@ shinyServer(function(input,output,session){
           }
           
           #現金以外
-          notCashlist=which(gdis==Inf)
+          gdis2=distances(g,mode="in")["現金",]
+          
+          cdisMax2=max(gdis2[gdis2!=Inf])
           notnum=9.0
-          for(i in notCashlist)
-          {
-            self_layout[i,1] = sample(c(0,10),1)
-            self_layout[i,2] = notnum
-            notnum=notnum+0.5
+          for(l in 0:cdisMax2){
+            inCashlist=which(gdis2==l)
+            
+            for(i in inCashlist)
+            {
+              self_layout[i,1] = (cdisMax2-l)*(10/cdisMax2)
+              self_layout[i,2] = notnum
+            }
           }
+          
 
           
           output$myImage <- renderImage({
