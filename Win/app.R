@@ -240,6 +240,7 @@ server <-shinyServer(function(input,output,session){
         input$lower
         input$layoutIndex
         input$dynamicText
+        input$selector
         
         #初期リストがuiで変更された場合にそれを反映する
         nodeListData=hot_to_r(input$dynamicText)
@@ -399,51 +400,90 @@ server <-shinyServer(function(input,output,session){
           
           ##plot
           
-          ##自作レイアウトの試作
-          print(V(g)$name)
-          print(which(V(g)$name=="現金"))
-          
-          gdis=distances(g,mode="out")["現金",]
-          
-          cdisMax=max(gdis[gdis!=Inf])
-          self_layout=matrix(0,length(V(g)$name),2)
-          for(i in 0:cdisMax)
-          {
-            #現金から距離iになる勘定科目の取り出し
-            cwdist=which(gdis==i)
-            ynum=length(cwdist)
-            ynumM=ynum
+          ##自作レイアウト
+          selector=input$selector
+          if(sum(labelName==selector)==1){
             
-            for(l in cwdist)
+            gdis=distances(g,mode="out")[selector,]
+          
+            cdisMax=max(gdis[gdis!=Inf])
+            self_layout=matrix(0,length(V(g)$name),2)
+            for(i in 0:cdisMax)
             {
-              self_layout[l,1] = (cdisMax-i)*(10/cdisMax)
-              self_layout[l,2] = ynum*(8/ynumM)
-              ynum= ynum-1
-              if(i==0) self_layout[l,2] = 3*(8/5)
+              #現金から距離iになる勘定科目の取り出し
+              cwdist=which(gdis==i)
+              ynum=length(cwdist)
+              ynumM=ynum
+              
+              for(l in cwdist)
+              {
+                self_layout[l,1] = (cdisMax-i)*(10/cdisMax)
+                self_layout[l,2] = ynum*(8/ynumM)
+                ynum= ynum-1
+                if(i==0) self_layout[l,2] = 3*(8/5)
+              }
             }
-          }
-          
-          #現金に入る
-          gdis2=distances(g,mode="in")["現金",]
-          print(gdis2)
-          
-          cdisMax2=max(gdis2[gdis2!=Inf])
-          notnum=9.0
-          for(l in 0:cdisMax2){
-            inCashlist=which(gdis2==l)
             
-            for(i in inCashlist)
-            {
-              if(cdisMax2==0){
-                self_layout[i,1]=0
+            #現金に入る
+            gdis2=distances(g,mode="in")[selector,]
+            print(gdis2)
+            
+            cdisMax2=max(gdis2[gdis2!=Inf])
+            notnum=9.0
+            for(l in 0:cdisMax2){
+              inCashlist=which(gdis2==l)
+              
+              for(i in inCashlist)
+              {
+                if(cdisMax2==0){
+                  self_layout[i,1]=0
+                }
+                else{
+                  self_layout[i,1] = (cdisMax2-l)*(10/cdisMax2)
+                }
+                self_layout[i,2] = notnum
               }
-              else{
-                self_layout[i,1] = (cdisMax2-l)*(10/cdisMax2)
-              }
-              self_layout[i,2] = notnum
             }
-          }
+            
+            output$myImage <- renderImage({
+              width  <- session$clientData$output_myImage_width
+              height <- session$clientData$output_myImage_height
+              pixelratio <- session$clientData$pixelratio
+              outfile <- tempfile(fileext='.png')
+              png(outfile, width=width*pixelratio, height=height*pixelratio,
+                  res=72*pixelratio)
+              par(family="HiraKakuProN-W6",plt=c(0, 1, 0, 1))
+              plot(
+                g,
+                layout=self_layout,
+                edge.arrow.size=0.5,
+                edge.curved=eCurve,
+                edge.color=eColor,
+                edge.label.color=elColor,
+                vertex.color=adjustcolor(c(vColor),alpha=0.8),
+                vertex.size=vSize,
+                vertex.frame.color=vfColor,
+                vertex.label.color=vlColor,
+                vertex.label.cex=1.0,
+                vertex.label.dist=0,
+                main="総計",
+                vertex.label.family="HiraKakuProN-W6"
+              )
+            
+              dev.off()
+            
+            
+             list(src = outfile,
+                   width = width,
+                   height = height,
+                   alt = "This is alternate text")
+            
+            
+            
+            },deleteFile = TRUE)
           
+          }
+        else{
           output$myImage <- renderImage({
             width  <- session$clientData$output_myImage_width
             height <- session$clientData$output_myImage_height
@@ -452,25 +492,8 @@ server <-shinyServer(function(input,output,session){
             png(outfile, width=width*pixelratio, height=height*pixelratio,
                 res=72*pixelratio)
             par(family="HiraKakuProN-W6",plt=c(0, 1, 0, 1))
-            plot(
-              g,
-              layout=self_layout,
-              edge.arrow.size=0.5,
-              edge.curved=eCurve,
-              edge.color=eColor,
-              edge.label.color=elColor,
-              vertex.color=adjustcolor(c(vColor),alpha=0.8),
-              vertex.size=vSize,
-              vertex.frame.color=vfColor,
-              vertex.label.color=vlColor,
-              vertex.label.cex=1.0,
-              vertex.label.dist=0,
-              main="総計",
-              vertex.label.family="HiraKakuProN-W6"
-            )
-            
+            plot(0)
             dev.off()
-            
             
             list(src = outfile,
                  width = width,
@@ -480,7 +503,8 @@ server <-shinyServer(function(input,output,session){
             
             
           },deleteFile = TRUE)
-          
+            
+          }
           
         }
         
@@ -514,14 +538,14 @@ ui <- shinyUI(
     ),
     tabPanel(
       "データの入力",
-      fileInput('mydata', 'Choose file to upload',
+      fileInput('mydata', 'CSVファイルを選択',
                 accept = c(
                   'text/csv',
                   'text/comma-separated-values',
                   '.csv'
                 )),
-      radioButtons("separator","Separator: ",choices = c(",",";",":"), selected=",",inline=TRUE),
-      radioButtons("encode","encoding: ",choices = c("utf8","Shift-JIS","cp932"), selected="Shift-JIS",inline=TRUE),
+      radioButtons("separator","セパレータ: ",choices = c(",",";",":"), selected=",",inline=TRUE),
+      radioButtons("encode","文字コード: ",choices = c("utf8","Shift-JIS","cp932"), selected="Shift-JIS",inline=TRUE),
         column(9,
                h4(textOutput("tableText")),
                DT::dataTableOutput("table")
@@ -570,7 +594,8 @@ ui <- shinyUI(
         
         column(3,
                actionButton("do1","残高表示/非表示"),
-               actionButton("do2","総計表示/個別期間表示")
+               actionButton("do2","総計表示/個別期間表示"),
+               radioButtons("selector","総計表示選択: ",choices = c("現金","売上","販管費","有価証券","その他収益","その他費用"), selected="現金",inline=TRUE)
         )
         
       )
