@@ -199,6 +199,18 @@ server <-shinyServer(function(input,output,session){
       #fullDataを作っておく
       fullData=data.frame(nodeS=c(),nodeF=c(),edgeLabel=c())
       num=0
+      Cashlist=NodeLabels
+      inCashlist=rep(0,length(NodeLabels))
+      outCashlist=rep(0,length(NodeLabels))
+      
+      for(nl0 in NodeLabels)
+      {
+        index=which(NodeLabels==nl0)
+        tempData=Data[Data$nodeS==nl0,]
+        inCashlist[index]=sum(tempData[,3])
+        tempData=Data[Data$nodeF==nl0,]
+        outCashlist[index]=sum(tempData[,3])
+      }
       
       for(nl1 in NodeLabels)
       {
@@ -384,6 +396,23 @@ server <-shinyServer(function(input,output,session){
             E(g)$label[i] = fullData$edgeLabel[i];
             
           }
+          if(input$sizeselector=="入金額"){
+            node.size<-setNames((outCashlist)*0.7,V(g)$name)
+          }
+          if(input$sizeselector=="利用額"){
+            node.size<-setNames((inCashlist)*0.7,V(g)$name)
+          }
+          if(input$sizeselector=="残額"){
+            zangaku=outCashlist+nodeList-inCashlist
+            for(i in zangaku){
+              index=which(zangaku==i)
+              if(i<0){
+                zangaku[index]=0
+              }
+            }
+            node.size<-setNames(zangaku*0.7,V(g)$name)
+          }
+          
           
           if(input$do1%%2==0)
           {
@@ -461,7 +490,7 @@ server <-shinyServer(function(input,output,session){
                 edge.color=eColor,
                 edge.label.color=elColor,
                 vertex.color=adjustcolor(c(vColor),alpha=0.8),
-                vertex.size=vSize,
+                vertex.size=as.matrix(node.size),
                 vertex.frame.color=vfColor,
                 vertex.label.color=vlColor,
                 vertex.label.cex=1.0,
@@ -595,7 +624,8 @@ ui <- shinyUI(
         column(3,
                actionButton("do1","残高表示/非表示"),
                actionButton("do2","総計表示/個別期間表示"),
-               radioButtons("selector","総計表示選択: ",choices = c("現金","売上","販管費","有価証券","その他収益","その他費用"), selected="現金",inline=TRUE)
+               radioButtons("selector","総計表示選択: ",choices = c("現金","売上","販管費","有価証券","その他収益","その他費用"), selected="現金",inline=TRUE),
+               radioButtons("sizeselector","サイズ設定基準: ",choices = c("利用額","入金額","残額"), selected="入金額",inline=TRUE)
         )
         
       )
