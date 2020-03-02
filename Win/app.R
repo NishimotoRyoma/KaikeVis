@@ -26,11 +26,11 @@ server <-shinyServer(function(input,output,session){
   #------------#
   #testData : 見本データ
   #testDataと同じ形のデータを入力する必要がある。
-  #nodeS,nodeF,edgelabel,Date
+  #credit,debit,edgelabel,Date
   
-  #nodeS : generic type(現在日本語非対応)
+  #credit : generic type(現在日本語非対応)
   #         ノードの始点( 支出点 )
-  #nodeF : generic type(現在日本語非対応)
+  #debit : generic type(現在日本語非対応)
   #         ノードの終点( 収入点 )
   #edgelabel : numeric type
   #         取引の増減額
@@ -45,11 +45,11 @@ server <-shinyServer(function(input,output,session){
   #         見本データの個数
   #nodeLabel : a~oのアルファベット
   #           ノードの作成。今回はa~oと名前をつけておいた
-  #nodeS,nodeF,edgeLabel,dateSeq : 先ほど説明したデータ
+  #credit,debit,edgeLabel,dateSeq : 先ほど説明したデータ
   dataNum = 20;
   nodeLabel = letters[1:15];
-  nodeS = c();
-  nodeF = c();
+  credit = c();
+  debit = c();
   edgeLabel = c();
   dateSeq = c();
   
@@ -59,10 +59,10 @@ server <-shinyServer(function(input,output,session){
   #データの加工と作成
   for(i in 1:dataNum)
   {
-    #nodeS,nodeF,edgeLabelの作成
+    #credit,debit,edgeLabelの作成
     temp = sample(nodeLabel,2);
-    nodeS[i] <- temp[1];
-    nodeF[i] <- temp[2];
+    credit[i] <- temp[1];
+    debit[i] <- temp[2];
     edgeLabel[i] <- sample(seq(100,900,100),1);
   }
   
@@ -75,10 +75,10 @@ server <-shinyServer(function(input,output,session){
   }
   dateSeq = as.character(as.Date(dateSeq,origin="1970-01-01"));
   
-  #サンプル用データ(testData) : dataframeとして保存
+  #サンプル用データ(testData) : dataframeとして保存  
   testData = data.frame(
-    nodeS=nodeS,
-    nodeF=nodeF,
+    debit=debit,
+    credit=credit,
     edgeLabel=edgeLabel,
     Date=dateSeq
   );
@@ -125,8 +125,8 @@ server <-shinyServer(function(input,output,session){
       #####プロットの生成
       #####まず最も利用されるノードを求めて、一番前に置く(中心点になる)
       #NodeLabels : アップロードしたデータに利用されているノードのラベル
-      NodeLabels=unique(c(levels(Data$nodeS),levels(Data$nodeF)));
-      tempMat=table(Data[c("nodeS","nodeF")])
+      NodeLabels=unique(c(levels(Data$credit),levels(Data$debit)));
+      tempMat=table(Data[c("credit","debit")])
       #NodeNum : それぞれのノードの出現回数
       NodeNum=c();
       for(i in NodeLabels)
@@ -190,14 +190,14 @@ server <-shinyServer(function(input,output,session){
       graph_[[1]] <- g; 
       name_=c(" ",as.character(as.Date(time_,origin="1970-01-01")));
       Data_=list();
-      Data_[[1]] <- data.frame(nodeS=c(),nodeF=c(),edgeLabel=c());
+      Data_[[1]] <- data.frame(credit=c(),debit=c(),edgeLabel=c());
       
       #動的に値を変更できるrhandsontableでノードリストを引き渡す
       output$dynamicText <- renderRHandsontable({rhandsontable(nodeListDataFrame)})
       
       
       #fullDataを作っておく
-      fullData=data.frame(nodeS=c(),nodeF=c(),edgeLabel=c())
+      fullData=data.frame(credit=c(),debit=c(),edgeLabel=c())
       num=0
       Cashlist=NodeLabels
       inCashlist=rep(0,length(NodeLabels))
@@ -206,9 +206,9 @@ server <-shinyServer(function(input,output,session){
       for(nl0 in NodeLabels)
       {
         index=which(NodeLabels==nl0)
-        tempData=Data[Data$nodeS==nl0,]
+        tempData=Data[Data$credit==nl0,]
         inCashlist[index]=sum(tempData[,3])
-        tempData=Data[Data$nodeF==nl0,]
+        tempData=Data[Data$debit==nl0,]
         outCashlist[index]=sum(tempData[,3])
       }
       
@@ -216,16 +216,16 @@ server <-shinyServer(function(input,output,session){
       {
         for(nl2 in NodeLabels)
         {
-          if(dim(Data[Data$nodeS==nl1,])[1]>0)
+          if(dim(Data[Data$credit==nl1,])[1]>0)
           {
-            tempData=Data[Data$nodeS==nl1,]
+            tempData=Data[Data$credit==nl1,]
             
-            if(dim(tempData[tempData$nodeF==nl2,])[1]>0)
+            if(dim(tempData[tempData$debit==nl2,])[1]>0)
             {
               num=num+1
-              tempData=tempData[tempData$nodeF==nl2,]
-              fullData[num,"nodeS"]=nl1
-              fullData[num,"nodeF"]=nl2
+              tempData=tempData[tempData$debit==nl2,]
+              fullData[num,"credit"]=nl1
+              fullData[num,"debit"]=nl2
               fullData[num,"edgeLabel"]=sum(tempData[,3])
             }
           }
@@ -253,6 +253,7 @@ server <-shinyServer(function(input,output,session){
         input$layoutIndex
         input$dynamicText
         input$selector
+        input$intdist
         
         #初期リストがuiで変更された場合にそれを反映する
         nodeListData=hot_to_r(input$dynamicText)
@@ -266,7 +267,7 @@ server <-shinyServer(function(input,output,session){
         V(g)$label=labelName;
         graph_[[1]] <- g;
         name_=c(" ",as.character(as.Date(time_,origin="1970-01-01")));
-        Data_[[1]] <- data.frame(nodeS=c(),nodeF=c(),edgeLabel=c());
+        Data_[[1]] <- data.frame(credit=c(),debit=c(),edgeLabel=c());
         
         
         #upper以上の額のエッジは出力しない
@@ -299,11 +300,11 @@ server <-shinyServer(function(input,output,session){
               {
                 num = num+1;
                 #factorの水準値が出てくるのでcharに変換
-                g = add_edges(g,c(as.character(Data$nodeS[i]),as.character(Data$nodeF[i])));
+                g = add_edges(g,c(as.character(Data$credit[i]),as.character(Data$debit[i])));
                 E(g)$label[num] = Data$edgeLabel[i];
                 
-                nodeList[which(V(g)$name==as.character(Data$nodeS[i]))] = nodeList[which(V(g)$name==as.character(Data$nodeS[i]))] - Data$edgeLabel[i];
-                nodeList[which(V(g)$name==as.character(Data$nodeF[i]))] = nodeList[which(V(g)$name==as.character(Data$nodeF[i]))] + Data$edgeLabel[i];
+                nodeList[which(V(g)$name==as.character(Data$credit[i]))] = nodeList[which(V(g)$name==as.character(Data$credit[i]))] - Data$edgeLabel[i];
+                nodeList[which(V(g)$name==as.character(Data$debit[i]))] = nodeList[which(V(g)$name==as.character(Data$debit[i]))] + Data$edgeLabel[i];
               }
             }
             
@@ -392,7 +393,7 @@ server <-shinyServer(function(input,output,session){
           for(i in 1:dim(fullData)[1])
           {
             #factorの水準値が出てくるのでcharに変換
-            g = add_edges(g,c(as.character(fullData$nodeS[i]),as.character(fullData$nodeF[i])));
+            g = add_edges(g,c(as.character(fullData$credit[i]),as.character(fullData$debit[i])));
             E(g)$label[i] = fullData$edgeLabel[i];
             
           }
@@ -431,48 +432,67 @@ server <-shinyServer(function(input,output,session){
           
           ##自作レイアウト
           selector=input$selector
+          selectdist=input$intdist
+          g3=g
+          deletelist=rep(0,length(V(g3)$name))
           if(sum(labelName==selector)==1){
             
-            gdis=distances(g,mode="out")[selector,]
-          
+            gdis=distances(g3,mode="out")[selector,]
+            
             cdisMax=max(gdis[gdis!=Inf])
-            self_layout=matrix(0,length(V(g)$name),2)
+            self_layout=matrix(0,length(V(g3)$name),2)
             for(i in 0:cdisMax)
             {
               #現金から距離iになる勘定科目の取り出し
               cwdist=which(gdis==i)
-              ynum=length(cwdist)
-              ynumM=ynum
+              if(i<=selectdist){
+                ynum=length(cwdist)
+                ynumM=ynum
               
-              for(l in cwdist)
-              {
-                self_layout[l,1] = (cdisMax-i)*(10/cdisMax)
-                self_layout[l,2] = ynum*(8/ynumM)
-                ynum= ynum-1
-                if(i==0) self_layout[l,2] = 3*(8/5)
+                for(l in cwdist)
+                {
+                  self_layout[l,1] = -(cdisMax-i)*(10/cdisMax)
+                  self_layout[l,2] = ynum*(8/ynumM)
+                  ynum= ynum-1
+                  if(i==0) self_layout[l,2] = 3*(8/5)
+                }
+              }
+              else{
+                deletelist[cwdist]=1
               }
             }
             
+            
             #現金に入る
-            gdis2=distances(g,mode="in")[selector,]
-            print(gdis2)
+            gdis2=distances(g3,mode="in")[selector,]
             
             cdisMax2=max(gdis2[gdis2!=Inf])
             notnum=9.0
             for(l in 0:cdisMax2){
               inCashlist=which(gdis2==l)
+              if(l<=selectdist){
               
-              for(i in inCashlist)
-              {
-                if(cdisMax2==0){
-                  self_layout[i,1]=0
+                for(i in inCashlist)
+                {
+                  if(cdisMax2==0){
+                    self_layout[i,1]=0
+                  }
+                  else{
+                    self_layout[i,1] = -(cdisMax2-l)*(10/cdisMax2)
+                  }
+                  self_layout[i,2] = notnum
                 }
-                else{
-                  self_layout[i,1] = (cdisMax2-l)*(10/cdisMax2)
-                }
-                self_layout[i,2] = notnum
+              }
+              else{
+                deletelist[inCashlist]=1
               }
             }
+            deletelist[intersect(which(gdis==Inf),which(gdis2==Inf))]=1
+            
+            g3=g3-V(g3)[which(deletelist>0)]
+            #g3=g3-V(g3)$name[which(deletelist>0)]
+            #g3=g3-V(g3)$label[which(deletelist>0)]
+            self_layout=self_layout[-which(deletelist>0),]
             
             output$myImage <- renderImage({
               width  <- session$clientData$output_myImage_width
@@ -483,7 +503,7 @@ server <-shinyServer(function(input,output,session){
                   res=72*pixelratio)
               par(family="HiraKakuProN-W6",plt=c(0, 1, 0, 1))
               plot(
-                g,
+                g3,
                 layout=self_layout,
                 edge.arrow.size=0.5,
                 edge.curved=eCurve,
@@ -498,40 +518,40 @@ server <-shinyServer(function(input,output,session){
                 main="総計",
                 vertex.label.family="HiraKakuProN-W6"
               )
-            
+              
               dev.off()
-            
-            
-             list(src = outfile,
+              
+              
+              list(src = outfile,
                    width = width,
                    height = height,
                    alt = "This is alternate text")
-            
-            
-            
+              
+              
+              
             },deleteFile = TRUE)
-          
+            
           }
-        else{
-          output$myImage <- renderImage({
-            width  <- session$clientData$output_myImage_width
-            height <- session$clientData$output_myImage_height
-            pixelratio <- session$clientData$pixelratio
-            outfile <- tempfile(fileext='.png')
-            png(outfile, width=width*pixelratio, height=height*pixelratio,
-                res=72*pixelratio)
-            par(family="HiraKakuProN-W6",plt=c(0, 1, 0, 1))
-            plot(0)
-            dev.off()
-            
-            list(src = outfile,
-                 width = width,
-                 height = height,
-                 alt = "This is alternate text")
-            
-            
-            
-          },deleteFile = TRUE)
+          else{
+            output$myImage <- renderImage({
+              width  <- session$clientData$output_myImage_width
+              height <- session$clientData$output_myImage_height
+              pixelratio <- session$clientData$pixelratio
+              outfile <- tempfile(fileext='.png')
+              png(outfile, width=width*pixelratio, height=height*pixelratio,
+                  res=72*pixelratio)
+              par(family="HiraKakuProN-W6",plt=c(0, 1, 0, 1))
+              plot(0)
+              dev.off()
+              
+              list(src = outfile,
+                   width = width,
+                   height = height,
+                   alt = "This is alternate text")
+              
+              
+              
+            },deleteFile = TRUE)
             
           }
           
@@ -575,11 +595,11 @@ ui <- shinyUI(
                 )),
       radioButtons("separator","セパレータ: ",choices = c(",",";",":"), selected=",",inline=TRUE),
       radioButtons("encode","文字コード: ",choices = c("utf8","Shift-JIS","cp932"), selected="Shift-JIS",inline=TRUE),
-        column(9,
-               h4(textOutput("tableText")),
-               DT::dataTableOutput("table")
-        )
+      column(9,
+             h4(textOutput("tableText")),
+             DT::dataTableOutput("table")
       )
+    )
     ,
     
     tabPanel(
@@ -624,8 +644,15 @@ ui <- shinyUI(
         column(3,
                actionButton("do1","残高表示/非表示"),
                actionButton("do2","総計表示/個別期間表示"),
-               radioButtons("selector","総計表示選択: ",choices = c("現金","売上","販管費","有価証券","その他収益","その他費用"), selected="現金",inline=TRUE),
-               radioButtons("sizeselector","サイズ設定基準: ",choices = c("利用額","入金額","残額"), selected="入金額",inline=TRUE)
+               radioButtons("selector","表示選択: ",choices = c("現金","売上","販管費","有価証券","その他収益","その他費用"), selected="現金",inline=TRUE),
+               radioButtons("sizeselector","サイズ設定基準: ",choices = c("利用額","入金額","残額"), selected="入金額",inline=TRUE),
+               numericInput(
+                 "intdist",
+                 "距離",
+                 value=1,
+                 min=0,
+                 step=1
+               )
         )
         
       )
