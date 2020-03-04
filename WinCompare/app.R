@@ -200,8 +200,6 @@ server <-shinyServer(function(input,output,session){
   NUedgeList2=NUedgeList1[(NUedgeList1$debit!=input$fixright2),]
   NUedgeList=NUedgeList2
   
-  print(NUedgeList)
-  
   #それぞれのグラフオブジェクトの作成
   gNU=graph(t(as.matrix(apply(NUedgeList,MARGIN=c(1,2),FUN=as.character))),directed=TRUE)
   NodeLabelsNU=V(gNU)$name
@@ -445,9 +443,6 @@ server <-shinyServer(function(input,output,session){
     gNU2=gNU2-V(gNU2)[which(deletelist>0)]
     self_layoutNU2=self_layoutNU[-which(deletelist>0),]
     node.size2=node.size2[-which(deletelist>0)]
-    
-    print(V(gNU2))
-    print(E(gNU2))
     
     #画像引き渡し
     output$myImageNU1 <- renderImage({
