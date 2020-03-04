@@ -200,6 +200,8 @@ server <-shinyServer(function(input,output,session){
   NUedgeList2=NUedgeList1[(NUedgeList1$debit!=input$fixright2),]
   NUedgeList=NUedgeList2
   
+  print(NUedgeList)
+  
   #それぞれのグラフオブジェクトの作成
   gNU=graph(t(as.matrix(apply(NUedgeList,MARGIN=c(1,2),FUN=as.character))),directed=TRUE)
   NodeLabelsNU=V(gNU)$name
@@ -327,6 +329,9 @@ server <-shinyServer(function(input,output,session){
   NUData=NUData2
   gNU2=add.edges(gNU,t(as.matrix(apply(NUData[,1:2],MARGIN=c(1,2),FUN=as.character))))
   
+
+  
+  
   inCashlist2=rep(0,length(V(gNU2)$name))
   outCashlist2=rep(0,length(V(gNU2)$name))
   
@@ -410,12 +415,11 @@ server <-shinyServer(function(input,output,session){
     }
     deletelist[intersect(which(gdis==Inf),which(gdis2==Inf))]=1
     gNU1=gNU1-V(gNU1)[which(deletelist>0)]
-    #gNU2=gNU2-V(gNU2)[which(deletelist>0)]
     self_layoutNU1=self_layoutNU[-which(deletelist>0),]
     node.size1=node.size1[-which(deletelist>0)]
     
     
-    
+    deletelist=rep(0,length(V(gNU)$name))
     gdis=distances(gNU2,mode="out")[selector,]
     
     cdisMax=max(gdis[gdis!=Inf])
@@ -435,10 +439,15 @@ server <-shinyServer(function(input,output,session){
         deletelist[inCashlist]=1
       }
     }
+    
+    
     deletelist[intersect(which(gdis==Inf),which(gdis2==Inf))]=1
     gNU2=gNU2-V(gNU2)[which(deletelist>0)]
     self_layoutNU2=self_layoutNU[-which(deletelist>0),]
     node.size2=node.size2[-which(deletelist>0)]
+    
+    print(V(gNU2))
+    print(E(gNU2))
     
     #画像引き渡し
     output$myImageNU1 <- renderImage({
@@ -741,8 +750,8 @@ ui <- shinyUI(
                     textInput("fixleft", label="現金預金", value = "現金")
              ),
              column(3,
-                    h5("売掛金など現金以外で資金源に該当する勘定科目をコンマ区切りで入力してください。グラフの左端に表示されます。"),
-                    textInput("fixleft2", label="売掛金等", value = "売掛金,受取手形")
+                    h5("買掛金など現金以外で資金源に該当する勘定科目をコンマ区切りで入力してください。グラフの左端に表示されます。"),
+                    textInput("fixleft2", label="買掛金等", value = "買掛金,支払手形")
              ),
              column(3,
                     h5("売上原価に相当する勘定科目を入力してください。グラフの右端に表示されます。"),
