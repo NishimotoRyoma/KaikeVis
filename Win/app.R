@@ -441,27 +441,6 @@ server <-shinyServer(function(input,output,session){
             
             cdisMax=max(gdis[gdis!=Inf])
             self_layout=matrix(0,length(V(g3)$name),2)
-            for(i in 0:cdisMax)
-            {
-              #現金から距離iになる勘定科目の取り出し
-              cwdist=which(gdis==i)
-              if(i<=selectdist){
-                ynum=length(cwdist)
-                ynumM=ynum
-              
-                for(l in cwdist)
-                {
-                  self_layout[l,1] = -(cdisMax-i)*(10/cdisMax)
-                  self_layout[l,2] = ynum*(8/ynumM)
-                  ynum= ynum-1
-                  if(i==0) self_layout[l,2] = 3*(8/5)
-                }
-              }
-              else{
-                deletelist[cwdist]=1
-              }
-            }
-            
             
             #現金に入る
             gdis2=distances(g3,mode="in")[selector,]
@@ -471,22 +450,53 @@ server <-shinyServer(function(input,output,session){
             for(l in 0:cdisMax2){
               inCashlist=which(gdis2==l)
               if(l<=selectdist){
-              
+                ynum=length(inCashlist)
+                ynumM=ynum
                 for(i in inCashlist)
                 {
                   if(cdisMax2==0){
                     self_layout[i,1]=0
                   }
                   else{
-                    self_layout[i,1] = -(cdisMax2-l)*(10/cdisMax2)
+                    self_layout[i,1] = -12
                   }
-                  self_layout[i,2] = notnum
+                  self_layout[l,2] = ynum*(8/ynumM)
+                  ynum= ynum-1
+                  
+                  
                 }
               }
               else{
                 deletelist[inCashlist]=1
               }
             }
+            
+            for(i in 0:cdisMax)
+            {
+              #現金から距離iになる勘定科目の取り出し
+              cwdist=which(gdis==i)
+              if(i<=selectdist){
+                ynum=length(cwdist)
+                ynumM=ynum
+                
+                for(l in cwdist)
+                {
+                  self_layout[l,1] = -(cdisMax-i)*(10/cdisMax)
+                  self_layout[l,2] = ynum*(8/ynumM)
+                  ynum= ynum-1
+                  
+                  if(i==0) {
+                    self_layout[l,1] = -10
+                    self_layout[l,2] = 3*(8/5)
+                  }
+                }
+              }
+              else{
+                deletelist[cwdist]=1
+              }
+            }
+            
+            
             deletelist[intersect(which(gdis==Inf),which(gdis2==Inf))]=1
             
             g3=g3-V(g3)[which(deletelist>0)]
