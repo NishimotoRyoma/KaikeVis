@@ -290,10 +290,24 @@ server <-shinyServer(function(input,output,session){
   
   #企業1
   #売上
-  UData1=Data[(Data$credit==input$fixright2),2:1]
-  UData2=Data[(Data$debit==input$fixright2),2:1]
+  UData1=Data[(Data$credit==input$fixright2),c(2:1,3)]
+  UData2=Data[(Data$debit==input$fixright2),c(2:1,3)]
   UData=rbind(UData1,UData2)
-  gU1=add.edges(gU,t(as.matrix(apply(UData,MARGIN=c(1,2),FUN=as.character))))
+  gU1=add.edges(gU,t(as.matrix(apply(UData[,1:2],MARGIN=c(1,2),FUN=as.character))))
+  
+  
+  inCashlistU1=rep(0,length(V(gU1)$name))
+  outCashlistU1=rep(0,length(V(gU1)$name))
+  
+  for(l in V(gU1)$name){
+    index=which(V(gU1)$name==l)
+    tempData=UData[UData$credit==l,]
+    inCashlistU1[index]=sum(tempData[,3])
+    tempData=UData[UData$debit==l,]
+    outCashlistU1[index]=sum(tempData[,3])
+  }
+  
+  
   
   #非売上
   NUData1=Data[(Data$credit!=input$fixright2),1:3]
@@ -316,10 +330,22 @@ server <-shinyServer(function(input,output,session){
 
   #企業2
   #売上
-  UData1=Data2[(Data2$credit==input$fixright2),2:1]
-  UData2=Data2[(Data2$debit==input$fixright2),2:1]
+  UData1=Data2[(Data2$credit==input$fixright2),c(2:1,3)]
+  UData2=Data2[(Data2$debit==input$fixright2),c(2:1,3)]
   UData=rbind(UData1,UData2)
-  gU2=add.edges(gU,t(as.matrix(apply(UData,MARGIN=c(1,2),FUN=as.character))))
+  gU2=add.edges(gU,t(as.matrix(apply(UData[,1:2],MARGIN=c(1,2),FUN=as.character))))
+  
+  inCashlistU2=rep(0,length(V(gU2)$name))
+  outCashlistU2=rep(0,length(V(gU2)$name))
+  
+  for(l in V(gU2)$name){
+    index=which(V(gU2)$name==l)
+    tempData=UData[UData$credit==l,]
+    inCashlistU2[index]=sum(tempData[,3])
+    tempData=UData[UData$debit==l,]
+    outCashlistU2[index]=sum(tempData[,3])
+  }
+  
   
   #非売上
   NUData1=Data2[(Data2$credit!=input$fixright2),1:3]
@@ -443,6 +469,39 @@ server <-shinyServer(function(input,output,session){
     gNU2=gNU2-V(gNU2)[which(deletelist>0)]
     self_layoutNU2=self_layoutNU[-which(deletelist>0),]
     node.size2=node.size2[-which(deletelist>0)]
+    
+    
+    #売上サイドの大きさ
+    
+    if(input$sizeselector=="入金額"){
+      node.sizeU1<-setNames((outCashlistU1)*0.7,V(gU)$name)
+      node.sizeU2<-setNames((outCashlistU2)*0.7,V(gU)$name)
+    }
+    if(input$sizeselector=="利用額"){
+      node.sizeU1<-setNames((inCashlistU1)*0.7,V(gU)$name)
+      node.sizeU2<-setNames((inCashlistU2)*0.7,V(gU)$name)
+    }
+    if(input$sizeselector=="残額"){
+      zangakuU1=outCashlistU1-inCashlistU1
+      for(i in zangakuU1){
+        index=which(zangakuU1==i)
+        if(i<0){
+          zangakuU1[index]=0
+        }
+      }
+      
+      zangakuU2=outCashlistU2-inCashlistU2
+      for(i in zangakuU2){
+        index=which(zangakuU2==i)
+        if(i<0){
+          zangakuU2[index]=0
+        }
+      }
+      
+      node.sizeU1<-setNames(zangakuU1*0.7,V(gU)$name)
+      node.sizeU2<-setNames(zangakuU2*0.7,V(gU)$name)
+    }
+    
     
     #画像引き渡し
     output$myImageNU1 <- renderImage({
@@ -580,6 +639,7 @@ server <-shinyServer(function(input,output,session){
       edge.curved=eCurve,
       edge.color=eColor,
       edge.label.color=elColor,
+      vertex.size=as.matrix(node.sizeU1),
       vertex.color=adjustcolor(c(vColor),alpha=0.8),
       vertex.frame.color=vfColor,
       vertex.label.color=vlColor,
@@ -617,6 +677,7 @@ server <-shinyServer(function(input,output,session){
       edge.curved=eCurve,
       edge.color=eColor,
       edge.label.color=elColor,
+      vertex.size=as.matrix(node.sizeU2),
       vertex.color=adjustcolor(c(vColor),alpha=0.8),
       vertex.frame.color=vfColor,
       vertex.label.color=vlColor,
